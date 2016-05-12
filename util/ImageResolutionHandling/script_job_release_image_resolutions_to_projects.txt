@@ -1,0 +1,71 @@
+/*
+* Script copies image resolution from current project to target projects.
+* Resolutions can be added only or replace all target resolutions.
+* Parameter: targetProjects - list of comma separated project ids as "1234,5678"
+* Parameter: appendResolutionsOnly: boolean value, true to append / add, false to replace
+*/
+import de.espirit.firstspirit.access.project.*;
+
+context.logInfo("Starting to release project resolutions with these parameters:");
+context.logInfo("Parameter targetProjects: " + targetProjects);
+context.logInfo("Parameter appendResolutionsOnly: " + appendResolutionsOnly);
+
+String[] projectIds = targetProjects.split(",");
+appendOnly = appendResolutionsOnly = Boolean.valueOf(appendResolutionsOnly);
+context.logInfo("append only: " + appendOnly);
+
+if (projectIds != null && projectIds.length > 0 && !projectIds[0].isEmpty()) {
+	List<Resolution> currentResolutions = context.getProject().getResolutions();
+	for (String projectId : projectIds) {
+		Long projectIdLong = Long.valueOf(projectId);
+		targetProject = context.getConnection().getProjectById(projectIdLong);
+		if (targetProject != null) {
+			context.logInfo("*** Setting resolutions in project " + projectId + " (" + targetProject.getName() + ")");
+			try {
+				targetProject.lock();
+				if (appendOnly) {
+					context.logInfo("Append resolutions");
+					for (Resolution res : currentResolutions) {
+						if (!res.isOriginal()) {
+							newResolution = targetProject.createResolution(res.getUid(), res.getDescription());
+			  				newResolution.setDisplayName(targetProject.getMasterLanguage(), res.getDisplayName(targetProject.getMasterLanguage()));
+			  				newResolution.setHeight(res.getHeight());
+				  			newResolution.setWidth(res.getWidth());
+				 	 		newResolution.setKeepAspectRatio(res.getKeepAspectRatio());
+							context.logInfo("Resolution added / updated:" + res.toString());
+						}
+					}
+				}
+				else {
+					if (!currentResolutions.isEmpty()) {
+						targetProject.setResolutions((Resolution[])currentResolutions.toArray(new Resolution[] {}));
+						context.logInfo("All resolutions set to project");
+					}
+					else {
+						context.logInfo("no resolutions found for import - keep all existing");
+					}
+				}
+			}
+			catch(Exception e) {
+				context.logError("Exception thrown:\n" + e.toString());
+			}
+			finally {
+				if (targetProject.isChanged()) {
+					if (!targetProject.isLocked()) {
+						targetProject.lock();
+				}
+					targetProject.save();
+				}
+				if (targetProject.isLocked()) {
+					targetProject.unlock();
+				}
+			}
+		}
+		else {
+			context.logError("Project with id " + projectId + " not found");
+		}
+	}
+}
+else {
+	context.logWarning("no target projects found, please set parameter targetProjects");
+}

@@ -1,0 +1,3 @@
+uid_testresolution,2testresolution,my resolution for all images,40,60,false
+uid_testresolution_two,2testresolution two,my resolution for all images again,40,605,false
+uid_testrä*+#%&/()esolution_two,2testresolätion two,mäy resolution for all images again,40,605,true
